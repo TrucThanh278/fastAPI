@@ -5,14 +5,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
-from src import crud
+from src.api.crud import user_crud
 from src.api.deps import SessionDep
 from src.configs.config import settings
 from src.configs.security import create_access_token
 from src.configs.config import logger
 from src.utils.oauth2_form import OAuth2PasswordRequestEmailForm
 from src.api.deps import SessionDep
-from src.models import User, BaseModel
+from src.models.users_model import User, BaseModel
 
 router = APIRouter(tags=["login"])
 
@@ -23,7 +23,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 async def login(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestEmailForm, Depends()]
 ):
-    user = crud.authenticate(
+    user = user_crud.authenticate(
         session=session, email=form_data.email, password=form_data.password
     )
     if not user:
@@ -42,7 +42,10 @@ async def login(
     }
 
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    session: SessionDep,
+):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -53,11 +56,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
         user_id = payload.get("subject")
+        logger.info(">>>>>>> User: %s" % user_id)
         if user_id is None:
             raise credentials_exception
     except InvalidTokenError:
         raise credentials_exception
-    user = crud.get_user(session=SessionDep, user_id=user_id)
+    user = user_crud.get_user(session=session, user_id=user_id)
     if user is None:
         raise credentials_exception
     return user

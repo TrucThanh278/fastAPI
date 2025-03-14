@@ -1,13 +1,22 @@
 import uuid
-from src.models import User, UserCreate, UserUpdate
+from src.models.users_model import User, UserCreate, UserUpdate
 from sqlmodel import Session, select
 from src.configs.security import get_hash_password, verify_password
 from src.configs.config import logger
 
+from src.api.crud import role_crud
+
 
 def create_user(*, session: Session, user_create: UserCreate):
+    role = role_crud.get_role_by_name(session=session, role_name=user_create.role)
+    print(">>>>>>>> Role: ", role)
     db_obj = User.model_validate(
-        user_create, update={"hashed_password": get_hash_password(user_create.password)}
+        user_create,
+        update={
+            "hashed_password": get_hash_password(user_create.password),
+            "role_id": role.id,
+            "role": role,
+        },
     )
     session.add(db_obj)
     session.commit()
@@ -15,10 +24,10 @@ def create_user(*, session: Session, user_create: UserCreate):
     return db_obj
 
 
-def get_user(*, session: Session, user_id: str):
-    user_ids = uuid.UUID(user_id.hex)
-    statement = select(User).where(User.id == user_ids)
-    logger.info(">>>>>>>>>>>>>>>>>> Equal: ", User.id == user_ids)
+def get_user(*, session: Session, user_id: uuid):
+    print("user_id", user_id)
+    statement = select(User).where(User.id == user_id)
+    print("statement", statement)
     user = session.exec(statement).first()
     return user
 

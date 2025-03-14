@@ -33,37 +33,7 @@ class Settings(BaseSettings):
         return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 
-# ✅ Cấu hình Logging **chỉ chạy một lần**
-def setup_logging():
-    logging_config = {
-        "version": 1,
-        "disable_existing_loggers": False,  # Không tắt logger gốc
-        "formatters": {
-            "default": {
-                "format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-                "datefmt": "%Y-%m-%d %H:%M:%S",
-            }
-        },
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "formatter": "default",
-            }
-        },
-        "root": {
-            "level": settings.LOG_LEVEL,
-            "handlers": ["console"],
-        },
-    }
-
-    # Kiểm tra nếu logging chưa được cấu hình, thì mới set up
-    if not logging.getLogger().hasHandlers():
-        dictConfig(logging_config)
-
-
-# ✅ Khởi tạo settings & chỉ cấu hình logging một lần
 settings = Settings()
-setup_logging()
-
-# ✅ Tạo logger dùng chung
+# setup_logging()
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("fastapi_project")

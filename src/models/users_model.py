@@ -1,22 +1,17 @@
 import uuid
 from typing import Optional
-from pydantic import EmailStr, BaseModel
-import time
+from pydantic import EmailStr, BaseModel, ConfigDict
+from sqlmodel import SQLModel, Field, Relationship
 
-from sqlmodel import SQLModel, Field
-
-
-class CustomBaseModel(SQLModel):
-    id: uuid.UUID = Field(primary_key=True, default_factory=uuid.uuid4)
-    created_at: str = Field(default_factory=lambda: str(int(time.time())))
-    updated_at: str = Field(default_factory=lambda: str(int(time.time())))
+from src.models.base_model import CustomBaseModel
+from src.models.roles_model import Role
 
 
 class UserBase(CustomBaseModel):
     name: str | None = Field(primary_key=True, max_length=255)
     email: str
     is_active: bool = True
-    is_superuser: bool = False
+    role: str
 
 
 class User(CustomBaseModel, table=True):
@@ -25,15 +20,30 @@ class User(CustomBaseModel, table=True):
     refresh_token: Optional[str] = None
     hashed_password: str
     is_active: bool = True
-    is_superuser: bool = False
+
+    role_id: uuid.UUID | None = Field(default=None, foreign_key="role.id")
+    role: Role | None = Relationship(back_populates="users")
 
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=255)
+    role: str = Field(default="user")
 
 
 class UserPublic(UserBase):
     id: uuid.UUID
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @classmethod
+    def from_orm(cls, user: User):
+        return cls(
+            id=user.id,
+            name=user.name,
+            email=user.email,
+            is_active=user.is_active,
+            role=user.role.name,
+        )
 
 
 class UsersPublic(SQLModel):

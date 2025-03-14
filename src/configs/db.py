@@ -1,4 +1,4 @@
-from src.models import User
+from src.models.users_model import User
 from sqlmodel import create_engine, SQLModel
 from src.configs.config import settings
 
