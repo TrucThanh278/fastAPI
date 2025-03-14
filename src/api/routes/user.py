@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 from fastapi import APIRouter, HTTPException
 from src.models.users_model import UserCreate
-from src.api.deps import SessionDep
+from src.deps import SessionDep
 from src.api.crud import user_crud
 from src.models.users_model import User, UserPublic, UserUpdate, UserRegister
 from src.configs.config import logger

@@ -6,17 +6,19 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
 from src.api.crud import user_crud
-from src.api.deps import SessionDep
+from src.deps import SessionDep
 from src.configs.config import settings
 from src.configs.security import create_access_token
 from src.configs.config import logger
 from src.utils.oauth2_form import OAuth2PasswordRequestEmailForm
-from src.api.deps import SessionDep
+from src.deps import SessionDep
 from src.models.users_model import User, BaseModel
+
+from src.deps import get_current_user, SessionDep
 
 router = APIRouter(tags=["login"])
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 
 @router.post("/login")
@@ -42,33 +44,32 @@ async def login(
     }
 
 
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-    session: SessionDep,
-):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        user_id = payload.get("subject")
-        logger.info(">>>>>>> User: %s" % user_id)
-        if user_id is None:
-            raise credentials_exception
-    except InvalidTokenError:
-        raise credentials_exception
-    user = user_crud.get_user(session=session, user_id=user_id)
-    if user is None:
-        raise credentials_exception
-    return user
+# async def get_current_user(
+#     token: Annotated[str, Depends(oauth2_scheme)],
+#     session: SessionDep,
+# ):
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+#     try:
+#         payload = jwt.decode(
+#             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+#         )
+#         user_id = payload.get("subject")
+#         if user_id is None:
+#             raise credentials_exception
+#     except InvalidTokenError:
+#         raise credentials_exception
+#     user = user_crud.get_user(session=session, user_id=user_id)
+#     if user is None:
+#         raise credentials_exception
+#     return user
 
 
 @router.get("/auth/me", response_model=User)
 async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[User, Depends(get_current_user(["user"]))],
 ):
     return current_user

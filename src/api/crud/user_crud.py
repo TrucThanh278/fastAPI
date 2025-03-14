@@ -24,7 +24,7 @@ def create_user(*, session: Session, user_create: UserCreate):
     return db_obj
 
 
-def get_user(*, session: Session, user_id: uuid):
+def get_user(*, session: Session, user_id: uuid) -> User:
     print("user_id", user_id)
     statement = select(User).where(User.id == user_id)
     print("statement", statement)

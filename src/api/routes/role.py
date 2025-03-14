@@ -1,6 +1,6 @@
 from typing import Any
 from fastapi import APIRouter, HTTPException
-from src.api.deps import SessionDep
+from src.deps import SessionDep
 from src.api.crud import role_crud
 from src.models.roles_model import Role
 

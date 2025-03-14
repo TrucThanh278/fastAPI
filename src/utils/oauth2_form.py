@@ -5,7 +5,7 @@ from fastapi.security import OAuth2
 class OAuth2PasswordRequestEmailForm:
     def __init__(
         self,
-        email: str = Form(...),  # Đổi từ username -> email
+        email: str = Form(...),
         password: str = Form(...),
     ):
         self.email = email
