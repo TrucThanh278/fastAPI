@@ -1,4 +1,5 @@
 import uuid
+from typing import Optional
 from src.models.users_model import User, UserCreate, UserUpdate, UserPublic
 from sqlmodel import Session, select
 from src.configs.security import get_hash_password, verify_password
@@ -32,14 +33,12 @@ def get_user(*, session: Session, user_id: uuid) -> User:
     return user
 
 
-# def get_users(*, session: Session):
-#     statement = select(User)
-#     users = session.exec(statement).all()
-#     return users
-
-
-def get_users(*, session: Session):
+def get_users(*, session: Session, name_query: Optional[str] = None):
     statement = select(User)
+
+    if name_query:
+        statement = statement.where(User.name.like(f"%{name_query}%"))
+
     users = session.exec(statement).all()
     return [
         UserPublic(

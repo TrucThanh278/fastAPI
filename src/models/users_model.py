@@ -62,14 +62,10 @@ class UserRegister(SQLModel):
     password: str
 
 
-class TokenData(BaseModel):
-    user_id: str | None = None
-
-
 class Token(SQLModel):
     access_token: str
     token_type: str = "bearer"
 
 
-class TokenPayload(SQLModel):
-    sub: str | None = None
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
