@@ -20,3 +20,9 @@ def get_role_by_name(*, session: Session, role_name: str):
     statement = select(Role).where(Role.name == role_name)
     role = session.exec(statement).first()
     return role
+
+
+def get_roles(*, session: Session):
+    statement = select(Role)
+    roles = session.exec(statement).all()
+    return roles

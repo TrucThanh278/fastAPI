@@ -1,11 +1,18 @@
 import uuid
-from typing import Any
-from fastapi import APIRouter, HTTPException
+from typing import Any, Annotated
+from sqlmodel import col, delete, func, select
+from fastapi import APIRouter, HTTPException, Depends
 from src.models.users_model import UserCreate
-from src.deps import SessionDep
+from src.deps import SessionDep, get_current_user
 from src.api.crud import user_crud
-from src.models.users_model import User, UserPublic, UserUpdate, UserRegister
-from src.configs.config import logger
+from src.models.users_model import (
+    User,
+    UserPublic,
+    UserUpdate,
+    UsersPublic,
+    UserRegister,
+)
+from fastapi_pagination import Page, paginate
 
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -13,7 +20,6 @@ router = APIRouter(prefix="/user", tags=["user"])
 
 @router.get("/{user_id}", response_model=UserPublic)
 async def get_user_by_id(user_id: uuid.UUID, session: SessionDep) -> Any:
-    # user = session.get(User, user_id)
     user = user_crud.get_user(session=session, user_id=user_id)
     if not user:
         raise HTTPException(
@@ -34,14 +40,34 @@ async def create_user(*, session: SessionDep, user_data: UserCreate):
 
 
 @router.get("/")
-async def get_users(*, session: SessionDep):
-    logger.debug(f"Gọi database để lấy user")
+async def get_users(*, session: SessionDep) -> Page[UserPublic]:
     users = user_crud.get_users(session=session)
-    return users
+    return paginate(users)
+
+
+# @router.get(
+#     "/",
+#     # dependencies=[Depends(get_current_active_superuser)],
+#     response_model=UsersPublic,
+# )
+# def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
+
+#     count_statement = select(func.count()).select_from(User)
+#     count = session.exec(count_statement).one()
+
+#     statement = select(User).offset(skip).limit(limit)
+#     users = session.exec(statement).all()
+
+#     return UsersPublic(data=users, count=count)
 
 
 @router.put("/{user_id}")
-async def update_user(user_id: uuid.UUID, user_update: UserUpdate, session: SessionDep):
+async def update_user(
+    user_id: uuid.UUID,
+    user_update: UserUpdate,
+    session: SessionDep,
+    current_user: Annotated[User, Depends(get_current_user(["admin"]))],
+):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(
@@ -53,7 +79,11 @@ async def update_user(user_id: uuid.UUID, user_update: UserUpdate, session: Sess
 
 
 @router.delete("/{user_id}")
-async def delete_user(user_id: uuid.UUID, session: SessionDep):
+async def delete_user(
+    user_id: uuid.UUID,
+    session: SessionDep,
+    current_user: Annotated[User, Depends(get_current_user(["admin"]))],
+):
     user = session.get(User, user_id)
     if not user:
         raise HTTPException(

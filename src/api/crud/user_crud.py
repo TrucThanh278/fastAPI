@@ -1,5 +1,5 @@
 import uuid
-from src.models.users_model import User, UserCreate, UserUpdate
+from src.models.users_model import User, UserCreate, UserUpdate, UserPublic
 from sqlmodel import Session, select
 from src.configs.security import get_hash_password, verify_password
 from src.configs.config import logger
@@ -32,10 +32,25 @@ def get_user(*, session: Session, user_id: uuid) -> User:
     return user
 
 
+# def get_users(*, session: Session):
+#     statement = select(User)
+#     users = session.exec(statement).all()
+#     return users
+
+
 def get_users(*, session: Session):
     statement = select(User)
     users = session.exec(statement).all()
-    return users
+    return [
+        UserPublic(
+            id=user.id,
+            name=user.name,
+            email=user.email,
+            is_active=user.is_active,
+            role=user.role.name if user.role else None,
+        )
+        for user in users
+    ]
 
 
 def get_user_by_email(*, session: Session, email: str):

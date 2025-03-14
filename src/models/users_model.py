@@ -42,12 +42,12 @@ class UserPublic(UserBase):
             name=user.name,
             email=user.email,
             is_active=user.is_active,
-            role=user.role.name,
+            role=user.role.name if user.role else None,
         )
 
 
 class UsersPublic(SQLModel):
-    data: list[UserPublic]
+    data: list[UserPublic.from_orm]
     count: int
 
 

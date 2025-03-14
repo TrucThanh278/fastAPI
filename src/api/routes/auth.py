@@ -18,8 +18,6 @@ from src.deps import get_current_user, SessionDep
 
 router = APIRouter(tags=["login"])
 
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
-
 
 @router.post("/login")
 async def login(
@@ -42,30 +40,6 @@ async def login(
         "refresh_token": refresh_token,
         "token_type": "bearer",
     }
-
-
-# async def get_current_user(
-#     token: Annotated[str, Depends(oauth2_scheme)],
-#     session: SessionDep,
-# ):
-#     credentials_exception = HTTPException(
-#         status_code=status.HTTP_401_UNAUTHORIZED,
-#         detail="Could not validate credentials",
-#         headers={"WWW-Authenticate": "Bearer"},
-#     )
-#     try:
-#         payload = jwt.decode(
-#             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-#         )
-#         user_id = payload.get("subject")
-#         if user_id is None:
-#             raise credentials_exception
-#     except InvalidTokenError:
-#         raise credentials_exception
-#     user = user_crud.get_user(session=session, user_id=user_id)
-#     if user is None:
-#         raise credentials_exception
-#     return user
 
 
 @router.get("/auth/me", response_model=User)
