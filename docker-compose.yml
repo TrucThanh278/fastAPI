@@ -5,21 +5,29 @@ services:
         environment:
             POSTGRES_USER: ${POSTGRES_USER}
             POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-            POSTGRES_DB: ${POSTGRES_DB}
+            POSTGRES_DB: ${POSTGRES_DB_NAME}
         ports:
             - "${POSTGRES_PORT}:5432"
         restart: always
-    # fastapi:
-    #     build: .
-    #     restart: always
-    #     container_name: fastapi_app
-    #     ports:
-    #         - "8000:8000"
-    #     depends_on:
-    #         - postgres_db
-    #     env_file:
-    #         - .env
-    #     volumes:
-    #         - .:/app
-    #     environment:
-    #         - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    fastapi:
+        build: .
+        restart: always
+        container_name: fastapi_app
+        ports:
+            - "8000:8000"
+        depends_on:
+            - postgres_db
+        env_file:
+            - .env
+        volumes:
+            - .:/app
+        command:
+            [
+                "uvicorn",
+                "src.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--reload",
+            ]
