@@ -50,7 +50,7 @@ def get_current_user(required_roles: list[str] = []) -> Callable[[], User]:
                 detail="There is no required field in your token. Please contact the administrator.",
             )
 
-        user_id = payload["subject"]
+        user_id = payload["sub"]
 
         user: User = user_crud.get_user(user_id=user_id, session=session)
         if not user:

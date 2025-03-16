@@ -39,5 +39,9 @@ def revoke_refresh_token(session: Session, refresh_token: str, user_id: str):
     return result
 
 
-def update_refresh_token(session: Session, user_id: str, expires_delta: str):
-    pass
+def get_refresh_token_active(session: Session, user_id: str, is_revoked: bool = False):
+    statement = select(RefreshToken).where(
+        and_(RefreshToken.user_id == user_id, RefreshToken.is_revoked == is_revoked)
+    )
+    result = session.exec(statement).first()
+    return result

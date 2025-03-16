@@ -31,7 +31,15 @@ async def login(
     )
     if not user_db:
         raise HTTPException(status_code=400, detail="Invalid credentials")
-    print(">>>>>>>>>>>>> settings.SECRET_KEY before: " + settings.SECRET_KEY)
+    exist_refresh_token = refresh_token_crud.get_refresh_token_active(
+        session=session, user_id=user_db.id
+    )
+
+    if exist_refresh_token is not None:
+        refresh_token_crud.revoke_refresh_token(
+            session=session, refresh_token=exist_refresh_token.token, user_id=user_db.id
+        )
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_token(str(user_db.id), expires_delta=access_token_expires)
 
@@ -54,7 +62,7 @@ async def login(
 
 @router.get("/me", response_model=User)
 async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_user(["user"]))],
+    current_user: Annotated[User, Depends(get_current_user(["user", "admin"]))],
 ):
     return current_user
 
@@ -72,24 +80,20 @@ async def logout(
 
 @router.post("/refresh")
 async def refresh_token(request: RefreshTokenRequest, session: SessionDep):
-    # try:
-    print(">>>>>>>>>>>>> bat dau: " + request.refresh_token)
-    print(">>>>>>>>>>>>> settings.SECRET_KEY after: " + settings.SECRET_KEY)
-    payload = jwt.decode(
-        request.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-    )
-    print(">>>>>>>>>>>>> type of payload: ", type(payload))
-    print(">>>>>>>>>>>>> payload: ", payload)
-    user_id = payload.get("subject")
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token 2",
+    try:
+        payload = jwt.decode(
+            request.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
         )
-    # except InvalidTokenError:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token 3"
-    #     )
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token 2",
+            )
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token 3"
+        )
 
     exist_user = user_crud.get_user(session=session, user_id=user_id)
     if not exist_user:
@@ -99,10 +103,6 @@ async def refresh_token(request: RefreshTokenRequest, session: SessionDep):
     refresh_token_db = refresh_token_crud.get_refresh_token(
         session=session, user_id=user_id, refresh_token=request.refresh_token
     )
-
-    print("?????????????????? ", refresh_token_db.token)
-    print("?????????????????? ", request.refresh_token)
-    print("?????????????????? ", refresh_token_db.is_revoked)
 
     if (
         refresh_token_db.token != request.refresh_token

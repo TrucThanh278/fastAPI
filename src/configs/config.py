@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     POSTGRES_SERVER: str
     POSTGRES_PORT: str
 
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 5  # 5 minutes
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1  # 5 minutes
     REFRESH_TOKEN_EXPIRE_DAYS: int = 60 * 24 * 14  # 14 days
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ALGORITHM: str = "HS256"

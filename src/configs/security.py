@@ -25,9 +25,9 @@ def create_token(
 ) -> str:
     expire = datetime.now(timezone.utc) + expires_delta
     to_encode = {
-        "expires": int(expire.timestamp()),
-        "subject": str(subject),
-        "created_at": created_at,
+        "exp": int(expire.timestamp()),
+        "sub": str(subject),
+        "iat": created_at,
     }
     encode_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
