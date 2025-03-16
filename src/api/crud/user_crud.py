@@ -1,20 +1,20 @@
 import uuid
 from typing import Optional
-from src.models.users_model import User, UserCreate, UserUpdate, UserPublic
 from sqlmodel import Session, select
 from src.configs.security import get_hash_password, verify_password
 from src.configs.config import logger
+from src.models.users import User, UserCreate, UserUpdate
+from src.schemas.user import UserPublic
 
 from src.api.crud import role_crud
 
 
 def create_user(*, session: Session, user_create: UserCreate):
     role = role_crud.get_role_by_name(session=session, role_name=user_create.role)
-    print(">>>>>>>> Role: ", role)
     db_obj = User.model_validate(
         user_create,
         update={
-            "hashed_password": get_hash_password(user_create.password),
+            "password": get_hash_password(user_create.password),
             "role_id": role.id,
             "role": role,
         },
@@ -80,6 +80,6 @@ def delete_user(*, session: Session, user_id: uuid.UUID):
 
 def authenticate(*, session: Session, email: str, password: str) -> User | None:
     user = get_user_by_email(session=session, email=email)
-    if not user or not verify_password(password, user.hashed_password):
+    if not user or not verify_password(password, user.password):
         return None
     return user

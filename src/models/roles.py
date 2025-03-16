@@ -1,5 +1,5 @@
-from sqlmodel import Field, Relationship, Session, SQLModel, create_engine
-from src.models.base_model import CustomBaseModel
+from sqlmodel import Relationship
+from src.models.base import CustomBaseModel
 
 
 class Role(CustomBaseModel, table=True):

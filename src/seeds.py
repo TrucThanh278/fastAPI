@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
-from src.api.crud import user_crud, role_crud
-from src.models.users_model import UserCreate
-from src.models.roles_model import Role
+from src.api.crud import role_crud, user_crud
+from src.models.users import UserCreate
+from src.models.roles import Role
 from src.configs.security import get_hash_password
 
 

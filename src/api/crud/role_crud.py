@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from src.models.roles_model import Role
+from src.models.roles import Role
 
 
 def create_role(*, session: Session, role_create: Role):

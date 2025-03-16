@@ -10,7 +10,7 @@ from src.api.crud import user_crud
 from fastapi.security import OAuth2PasswordBearer
 
 
-from src.models.users_model import User
+from src.models.users import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 

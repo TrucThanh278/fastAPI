@@ -9,25 +9,25 @@ services:
         ports:
             - "${POSTGRES_PORT}:5432"
         restart: always
-    fastapi:
-        build: .
-        restart: always
-        container_name: fastapi_app
-        ports:
-            - "8000:8000"
-        depends_on:
-            - postgres_db
-        env_file:
-            - .env
-        volumes:
-            - .:/app
-        command:
-            [
-                "uvicorn",
-                "src.main:app",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8000",
-                "--reload",
-            ]
+    # fastapi:
+    #     build: .
+    #     restart: always
+    #     container_name: fastapi_app
+    #     ports:
+    #         - "8000:8000"
+    #     depends_on:
+    #         - postgres_db
+    #     env_file:
+    #         - .env
+    #     volumes:
+    #         - .:/app
+    #     command:
+    #         [
+    #             "uvicorn",
+    #             "src.main:app",
+    #             "--host",
+    #             "0.0.0.0",
+    #             "--port",
+    #             "8000",
+    #             "--reload",
+    #         ]

@@ -2,14 +2,14 @@ import uuid
 from typing import Any, Annotated, Optional
 from sqlmodel import col, delete, func, select
 from fastapi import APIRouter, HTTPException, Depends, Query
-from src.models.users_model import UserCreate
+from src.models.users import UserCreate
 from src.deps import SessionDep, get_current_user
 from src.api.crud import user_crud
-from src.models.users_model import (
+from src.models.users import (
     User,
-    UserPublic,
     UserUpdate,
 )
+from src.schemas.user import UserPublic
 from fastapi_pagination import Page, paginate
 
 
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/user", tags=["user"])
 
 @router.get("/{user_id}", response_model=UserPublic)
 async def get_user_by_id(user_id: uuid.UUID, session: SessionDep) -> Any:
-    user = user_crud.get_user(session=session, user_id=user_id)
+    user = user.get_user(session=session, user_id=user_id)
     if not user:
         raise HTTPException(
             status_code=404,
@@ -29,10 +29,10 @@ async def get_user_by_id(user_id: uuid.UUID, session: SessionDep) -> Any:
 
 @router.post("/", response_model=UserPublic)
 async def create_user(*, session: SessionDep, user_data: UserCreate):
-    user = user_crud.get_user_by_email(session=session, email=user_data.email)
+    user = user.get_user_by_email(session=session, email=user_data.email)
     if user:
         raise HTTPException(status_code=400, detail="Email already registered")
-    user = user_crud.create_user(session=session, user_create=user_data)
+    user = user.create_user(session=session, user_create=user_data)
     rs = UserPublic.from_orm(user)
     return rs
 
@@ -76,7 +76,7 @@ async def update_user(
             status_code=404,
             detail="The user with this ID does not exist in the system",
         )
-    user = user_crud.update_user(session=session, user=user, user_update=user_update)
+    user = user.update_user(session=session, user=user, user_update=user_update)
     return user
 
 
@@ -92,5 +92,5 @@ async def delete_user(
             status_code=404,
             detail="The user with this ID does not exist in the system",
         )
-    user_crud.delete_user(session=session, user_id=user_id)
+    user.delete_user(session=session, user_id=user_id)
     return {"detail": "User deleted"}

@@ -3,8 +3,9 @@ from typing import Optional
 from pydantic import EmailStr, BaseModel, ConfigDict
 from sqlmodel import SQLModel, Field, Relationship
 
-from src.models.base_model import CustomBaseModel
-from src.models.roles_model import Role
+from src.models.base import CustomBaseModel
+from src.models.roles import Role
+from src.models.tokens import RefreshToken
 
 
 class UserBase(CustomBaseModel):
@@ -17,38 +18,20 @@ class UserBase(CustomBaseModel):
 class User(CustomBaseModel, table=True):
     name: str
     email: EmailStr = Field(max_length=255)
-    refresh_token: Optional[str] = None
-    hashed_password: str
+    password: str
     is_active: bool = True
+    delete_at: str | None = Field(default=None, nullable=True)
 
     role_id: uuid.UUID | None = Field(default=None, foreign_key="role.id")
     role: Role | None = Relationship(back_populates="users")
+    refresh_tokens: list[RefreshToken] | None = Relationship(
+        back_populates="user", sa_relationship_kwargs={"lazy": "selectin"}
+    )
 
 
 class UserCreate(UserBase):
     password: str = Field(min_length=8, max_length=255)
     role: str = Field(default="user")
-
-
-class UserPublic(UserBase):
-    id: uuid.UUID
-
-    model_config = ConfigDict(from_attributes=True)
-
-    @classmethod
-    def from_orm(cls, user: User):
-        return cls(
-            id=user.id,
-            name=user.name,
-            email=user.email,
-            is_active=user.is_active,
-            role=user.role.name if user.role else None,
-        )
-
-
-class UsersPublic(SQLModel):
-    data: list[UserPublic.from_orm]
-    count: int
 
 
 class UserUpdate(SQLModel):

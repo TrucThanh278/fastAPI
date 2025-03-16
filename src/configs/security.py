@@ -1,4 +1,5 @@
 import jwt
+import time
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -17,9 +18,17 @@ def verify_password(plain_pw: str, hashed_pw: str) -> bool:
     return pwd_context.verify(plain_pw, hashed_pw)
 
 
-def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
+def create_token(
+    subject: str | Any,
+    expires_delta: timedelta,
+    created_at: str = str(int(time.time())),
+) -> str:
     expire = datetime.now(timezone.utc) + expires_delta
-    to_encode = {"expires": int(expire.timestamp()), "subject": str(subject)}
+    to_encode = {
+        "expires": int(expire.timestamp()),
+        "subject": str(subject),
+        "created_at": created_at,
+    }
     encode_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )

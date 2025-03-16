@@ -8,11 +8,14 @@ from jwt.exceptions import InvalidTokenError
 from src.api.crud import user_crud
 from src.deps import SessionDep
 from src.configs.config import settings
-from src.configs.security import create_access_token
+from src.configs.security import create_token
 from src.configs.config import logger
 from src.utils.oauth2_form import OAuth2PasswordRequestEmailForm
 from src.deps import SessionDep
-from src.models.users_model import User, RefreshTokenRequest
+from sqlmodel import select
+from src.models.users import User, RefreshTokenRequest
+from src.api.crud import refresh_token_crud
+
 
 from src.deps import get_current_user, SessionDep
 
@@ -23,21 +26,23 @@ router = APIRouter(prefix="/auth", tags=["login"])
 async def login(
     session: SessionDep, form_data: Annotated[OAuth2PasswordRequestEmailForm, Depends()]
 ):
-    user = user_crud.authenticate(
+    user_db = user_crud.authenticate(
         session=session, email=form_data.email, password=form_data.password
     )
-    if not user:
+    if not user_db:
         raise HTTPException(status_code=400, detail="Invalid credentials")
+    print(">>>>>>>>>>>>> settings.SECRET_KEY before: " + settings.SECRET_KEY)
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(str(user.id), expires_delta=access_token_expires)
+    access_token = create_token(str(user_db.id), expires_delta=access_token_expires)
 
     refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    refresh_token = create_access_token(
-        str(user.id), expires_delta=refresh_token_expires
+    refresh_token = create_token(str(user_db.id), expires_delta=refresh_token_expires)
+
+    new_refresh_token = refresh_token_crud.create_refresh_token(
+        user_id=user_db.id, token=refresh_token, session=session
     )
 
-    user.refresh_token = refresh_token
-    session.add(user)
+    session.add(new_refresh_token)
     session.commit()
 
     return {
@@ -67,45 +72,65 @@ async def logout(
 
 @router.post("/refresh")
 async def refresh_token(request: RefreshTokenRequest, session: SessionDep):
-    try:
-        payload = jwt.decode(
-            request.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        user_id = payload.get("subject")
-        if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
-            )
-    except InvalidTokenError:
+    # try:
+    print(">>>>>>>>>>>>> bat dau: " + request.refresh_token)
+    print(">>>>>>>>>>>>> settings.SECRET_KEY after: " + settings.SECRET_KEY)
+    payload = jwt.decode(
+        request.refresh_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+    )
+    print(">>>>>>>>>>>>> type of payload: ", type(payload))
+    print(">>>>>>>>>>>>> payload: ", payload)
+    user_id = payload.get("subject")
+    if user_id is None:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid refresh token 2",
         )
+    # except InvalidTokenError:
+    #     raise HTTPException(
+    #         status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token 3"
+    #     )
 
-    user = user_crud.get_user(session=session, user_id=user_id)
-    if not user:
+    exist_user = user_crud.get_user(session=session, user_id=user_id)
+    if not exist_user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
+    refresh_token_db = refresh_token_crud.get_refresh_token(
+        session=session, user_id=user_id, refresh_token=request.refresh_token
+    )
 
-    if user.refresh_token != request.refresh_token:
+    print("?????????????????? ", refresh_token_db.token)
+    print("?????????????????? ", request.refresh_token)
+    print("?????????????????? ", refresh_token_db.is_revoked)
+
+    if (
+        refresh_token_db.token != request.refresh_token
+        and not refresh_token_db.is_revoked
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or revoked refresh token",
+            detail="Invalid or revoked refresh token 1",
         )
 
+    # revoked old token
+    refresh_token_crud.revoke_refresh_token(
+        session=session, user_id=user_id, refresh_token=request.refresh_token
+    )
+
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    new_access_token = create_access_token(
-        str(user.id), expires_delta=access_token_expires
+    new_access_token = create_token(
+        str(exist_user.id), expires_delta=access_token_expires
     )
 
     refresh_token_expires = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    new_refresh_token = create_access_token(
-        str(user.id), expires_delta=refresh_token_expires
+    new_refresh_token = create_token(
+        str(exist_user.id), expires_delta=refresh_token_expires
     )
 
-    user.refresh_token = new_refresh_token
-    session.add(user)
-    session.commit()
+    refresh_token_crud.create_refresh_token(
+        session=session, token=new_refresh_token, user_id=exist_user.id
+    )
 
     return {
         "access_token": new_access_token,
