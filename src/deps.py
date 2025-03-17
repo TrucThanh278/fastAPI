@@ -7,12 +7,14 @@ from fastapi import Depends, HTTPException, status
 from typing import Callable
 from src.configs.config import settings
 from src.api.crud import user_crud
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
 
 
 from src.models.users import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+security = HTTPBearer()
+
 
 
 def get_session():
@@ -28,12 +30,16 @@ SessionDep = Annotated[Session, Depends(get_session)]
 def get_current_user(required_roles: list[str] = []) -> Callable[[], User]:
 
     async def current_user(
-        session: SessionDep, token: Annotated[str, Depends(oauth2_scheme)]
+        session: SessionDep, token: Annotated[HTTPAuthorizationCredentials, Depends(security)]
     ) -> User:
         try:
             payload = jwt.decode(
-                token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
+                token.credentials, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
             )
+            print(">>> TOKEN: ", token.credentials)
+            print(">>> SECRET_KEY: ", settings.SECRET_KEY)
+            print(">>> ALGORITHM: ", settings.ALGORITHM)
+
         except ExpiredSignatureError:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -61,9 +67,13 @@ def get_current_user(required_roles: list[str] = []) -> Callable[[], User]:
 
         if required_roles:
             is_valid_role = False
-            for role in required_roles:
-                if role == user.role.name:
-                    is_valid_role = True
+
+            if "all" in required_roles:
+                is_valid_role = True
+            else:
+                for role in required_roles:
+                    if role == user.role.name:
+                        is_valid_role = True
 
             if not is_valid_role:
                 raise HTTPException(

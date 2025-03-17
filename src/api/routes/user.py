@@ -1,16 +1,16 @@
 import uuid
 from typing import Any, Annotated, Optional
-from sqlmodel import col, delete, func, select
 from fastapi import APIRouter, HTTPException, Depends, Query
-from src.models.users import UserCreate
+from fastapi_pagination import paginate
 from src.deps import SessionDep, get_current_user
 from src.api.crud import user_crud
+from src.models.users import UserCreate
 from src.models.users import (
     User,
     UserUpdate,
 )
 from src.schemas.user import UserPublic
-from fastapi_pagination import Page, paginate
+from src.utils.pagination import CustomPage
 
 
 router = APIRouter(prefix="/user", tags=["user"])
@@ -42,7 +42,7 @@ async def get_users(
     *,
     session: SessionDep,
     name: Optional[str] = Query(default=None, description="Search users by name")
-) -> Page[UserPublic]:
+) -> CustomPage[UserPublic]:
     users = user_crud.get_users(session=session, name_query=name)
     return paginate(users)
 

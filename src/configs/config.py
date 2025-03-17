@@ -14,10 +14,10 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_DB_NAME: str
-    POSTGRES_SERVER: str
+    POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: str
 
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1  # 5 minutes
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 5  # 5 minutes
     REFRESH_TOKEN_EXPIRE_DAYS: int = 60 * 24 * 14  # 14 days
     SECRET_KEY: str = secrets.token_urlsafe(32)
     ALGORITHM: str = "HS256"
@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
     def SQLALCHEMY_DATABASE_URI(self):
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB_NAME}"
+        uri= f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB_NAME}"
+        return uri
 
 
 settings = Settings()

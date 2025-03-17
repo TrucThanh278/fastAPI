@@ -2,7 +2,6 @@ import jwt
 from typing import Annotated
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 
 from src.api.crud import user_crud
@@ -12,9 +11,9 @@ from src.configs.security import create_token
 from src.configs.config import logger
 from src.utils.oauth2_form import OAuth2PasswordRequestEmailForm
 from src.deps import SessionDep
-from sqlmodel import select
 from src.models.users import User, RefreshTokenRequest
 from src.api.crud import refresh_token_crud
+from src.schemas.user import UserPublic
 
 
 from src.deps import get_current_user, SessionDep
@@ -60,11 +59,11 @@ async def login(
     }
 
 
-@router.get("/me", response_model=User)
+@router.get("/me", response_model=UserPublic)
 async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_user(["user", "admin"]))],
+    current_user: Annotated[User, Depends(get_current_user(["all"]))],
 ):
-    return current_user
+    return UserPublic.from_orm(current_user)
 
 
 @router.post("/logout")

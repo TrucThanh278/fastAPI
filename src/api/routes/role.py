@@ -1,10 +1,12 @@
 from typing import Any, Annotated
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi_pagination import paginate
+
 from src.deps import SessionDep, get_current_user
 from src.api.crud import role_crud
 from src.models.roles import Role
 from src.models.users import User
-from fastapi_pagination import Page, paginate
+from src.utils.pagination import CustomPage
 
 
 router = APIRouter(prefix="/role", tags=["role"])
@@ -38,6 +40,6 @@ async def get_role(
 @router.get("/")
 async def get_role(
     session: SessionDep,
-) -> Page[Role]:
+) -> CustomPage[Role]:
     roles = role_crud.get_roles(session=session)
     return paginate(roles)
