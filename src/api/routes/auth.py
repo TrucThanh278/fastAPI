@@ -1,32 +1,43 @@
 import jwt
 from typing import Annotated
 from datetime import timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi_mail import FastMail, MessageSchema, MessageType
 from jwt.exceptions import InvalidTokenError
+from starlette.background import BackgroundTasks
+from starlette.responses import JSONResponse
+from starlette.templating import Jinja2Templates
 
-from src.api.crud import user_crud
 from src.deps import SessionDep
+from src.api.crud import otp_crud, user_crud, refresh_token_crud
+from src.configs import mail
 from src.configs.config import settings
-from src.configs.security import create_token
+from src.configs.security import (
+    create_token,
+    create_reset_password_token,
+    decode_reset_password_token,
+    pwd_context,
+    create_otp,
+    get_hash_password,
+)
 from src.configs.config import logger
-from src.utils.oauth2_form import OAuth2PasswordRequestEmailForm
-from src.deps import SessionDep
-from src.models.users import User, RefreshTokenRequest
-from src.api.crud import refresh_token_crud
-from src.schemas.user import UserPublic
+from src.models.users import User
+from src.schemas.request import RefreshTokenRequest, ForgetPasswordRequest, LoginRequest
+from src.schemas.user import UserPublic, UserUpdate
+from src.schemas.reset_password import SuccessMessage, ResetForgetPassword
 
 
 from src.deps import get_current_user, SessionDep
 
-router = APIRouter(prefix="/auth", tags=["login"])
+router = APIRouter(prefix="/auth", tags=["auth"])
+templates = Jinja2Templates(directory=str(settings.TEMPLATE_FOLDER))
 
 
 @router.post("/login")
-async def login(
-    session: SessionDep, form_data: Annotated[OAuth2PasswordRequestEmailForm, Depends()]
-):
+async def login(session: SessionDep, user_login: LoginRequest):
     user_db = user_crud.authenticate(
-        session=session, email=form_data.email, password=form_data.password
+        session=session, email=user_login.email, password=user_login.password
     )
     if not user_db:
         raise HTTPException(status_code=400, detail="Invalid credentials")
@@ -136,3 +147,102 @@ async def refresh_token(request: RefreshTokenRequest, session: SessionDep):
         "refresh_token": new_refresh_token,
         "token_type": "bearer",
     }
+
+
+@router.post("/forget-password")
+async def forget_password(
+    background_tasks: BackgroundTasks,
+    forget_password_req: ForgetPasswordRequest,
+    session: SessionDep,
+):
+    try:
+        user = user_crud.get_user_by_email(
+            session=session, email=forget_password_req.email
+        )
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invalid Email address",
+            )
+        otp = create_otp()
+        otp_rec = otp_crud.create_otp(email=user.email, otp=otp, session=session)
+        if otp_rec:
+            email_body = {
+                "company_name": settings.MAIL_FROM_NAME,
+                "otp": otp,
+                "expiry_min": settings.OTP_EXPIRE_MINUTES,
+            }
+            message = MessageSchema(
+                subject="Password Reset OTP",
+                recipients=[forget_password_req.email],
+                template_body=email_body,
+                subtype=MessageType.html,
+            )
+            template_name = "mail/otp.html"
+
+            fm = FastMail(mail.conf)
+            background_tasks.add_task(fm.send_message, message, template_name)
+            url = f"{settings.APP_HOST}{settings.FORGET_PASSWORD_URL}?email={forget_password_req.email}"
+            print(">>>>> url: ", url)
+
+            return RedirectResponse(
+                url=f"{settings.APP_HOST}{settings.FORGET_PASSWORD_URL}?email={forget_password_req.email}",
+                status_code=status.HTTP_303_SEE_OTHER,
+            )
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                content={"message": "Please wait before requesting a new OTP!"},
+            )
+
+    except Exception as e:
+        print(f"Unexpected {e=}, {type(e)=}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Something Unexpected, Server Error!",
+        )
+
+
+@router.get("/forget-password/otp", response_class=HTMLResponse)
+async def get_opt_page(email: str):
+    print(">>>> Path: ", templates.env)
+    return templates.TemplateResponse("otp.html", {"request": {}, "email": email})
+
+
+@router.post("/forget-password/verify-otp", response_class=HTMLResponse)
+async def verify_otp(session: SessionDep, email: str = Form(...), otp: str = Form(...)):
+    if otp_crud.verify_otp(email=email, otp=otp, session=session):
+        return RedirectResponse(
+            url=f"{settings.APP_HOST}{settings.RESET_PASSWORD_URL}?email={email}",
+            status_code=status.HTTP_303_SEE_OTHER,
+        )
+    return templates.TemplateResponse(
+        "otp.html", {"request": {}, "email": email, "error": "Invalid or expired OTP"}
+    )
+
+
+@router.get("/reset-password", response_class=HTMLResponse)
+async def get_reset_password_page(email: str):
+    return templates.TemplateResponse(
+        "reset_password.html", {"request": {}, "email": email}
+    )
+
+
+@router.post("/reset-password")
+async def reset_password(
+    session: SessionDep,
+    email: str = Form(...),
+    new_password: str = Form(...),
+):
+    hash_password = get_hash_password(new_password)
+    user_update = UserUpdate(email=email, password=hash_password)
+    user_db = user_crud.get_user_by_email(session=session, email=email)
+    user = user_crud.update_user(session=session, user=user_db, user_update=user_update)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Password reset successfully"},
+    )

@@ -1,7 +1,7 @@
 import uuid
-from typing import Optional
-from pydantic import EmailStr, BaseModel, ConfigDict
+from pydantic import EmailStr
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import BIGINT
 
 from src.models.base import CustomBaseModel
 from src.models.roles import Role
@@ -17,7 +17,7 @@ class UserBase(CustomBaseModel):
 
 class User(CustomBaseModel, table=True):
     name: str
-    email: EmailStr = Field(max_length=255)
+    email: EmailStr = Field(max_length=255, unique=True)
     password: str
     is_active: bool = True
     delete_at: str | None = Field(default=None, nullable=True)
@@ -34,11 +34,6 @@ class UserCreate(UserBase):
     role: str = Field(default="user")
 
 
-class UserUpdate(SQLModel):
-    email: EmailStr | None = Field(default=None, max_length=255)  # type: ignore
-    password: str | None = Field(default=None, min_length=8, max_length=40)
-
-
 class UserRegister(SQLModel):
     name: str | None = Field(default=None, max_length=255)
     email: EmailStr
@@ -50,5 +45,12 @@ class Token(SQLModel):
     token_type: str = "bearer"
 
 
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
+class OTP(SQLModel, table=True):
+    id: uuid.UUID = Field(primary_key=True, default_factory=uuid.uuid4)
+
+    email: str
+    otp: str = Field(max_length=6)
+    expires_at: int = Field(sa_type=BIGINT)
+
+    class Config:
+        arbitrary_types_allowed = True

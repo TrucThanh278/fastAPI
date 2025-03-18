@@ -1,6 +1,8 @@
 import uuid
 from sqlmodel import Field, Relationship
+
 from src.models.base import CustomBaseModel
+
 
 
 class RefreshToken(CustomBaseModel, table=True):

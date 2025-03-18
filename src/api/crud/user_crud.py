@@ -3,8 +3,8 @@ from typing import Optional
 from sqlmodel import Session, select
 from src.configs.security import get_hash_password, verify_password
 from src.configs.config import logger
-from src.models.users import User, UserCreate, UserUpdate
-from src.schemas.user import UserPublic
+from src.models.users import User, UserCreate
+from src.schemas.user import UserPublic, UserUpdate
 
 from src.api.crud import role_crud
 

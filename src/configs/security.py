@@ -1,10 +1,11 @@
-import jwt
 import time
+import jwt
+import secrets
+from typing import Any
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
-from typing import Any
+
 from src.configs.config import settings
-from src.configs import security
 from src.configs.config import logger
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -33,3 +34,9 @@ def create_token(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
     return encode_jwt
+
+
+def create_otp() -> str:
+    return "".join(
+        secrets.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789") for _ in range(6)
+    )

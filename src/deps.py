@@ -7,7 +7,7 @@ from fastapi import Depends, HTTPException, status
 from typing import Callable
 from src.configs.config import settings
 from src.api.crud import user_crud
-from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 
 from src.models.users import User
