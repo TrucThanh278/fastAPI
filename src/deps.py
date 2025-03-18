@@ -1,11 +1,11 @@
 import jwt
 from jwt import DecodeError, ExpiredSignatureError, MissingRequiredClaimError
 from sqlmodel import Session
-from src.configs.db import engine
+from src.core.db import engine
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 from typing import Callable
-from src.configs.config import settings
+from src.core.config import settings
 from src.api.crud import user_crud
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -14,7 +14,6 @@ from src.models.users import User
 
 # oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 security = HTTPBearer()
-
 
 
 def get_session():
@@ -30,7 +29,8 @@ SessionDep = Annotated[Session, Depends(get_session)]
 def get_current_user(required_roles: list[str] = []) -> Callable[[], User]:
 
     async def current_user(
-        session: SessionDep, token: Annotated[HTTPAuthorizationCredentials, Depends(security)]
+        session: SessionDep,
+        token: Annotated[HTTPAuthorizationCredentials, Depends(security)],
     ) -> User:
         try:
             payload = jwt.decode(

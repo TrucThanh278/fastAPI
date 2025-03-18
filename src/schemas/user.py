@@ -1,6 +1,6 @@
 import uuid
 from sqlmodel import SQLModel, Field
-from pydantic import ConfigDict, EmailStr
+from pydantic import ConfigDict
 from src.models.users import UserBase
 from src.models.users import User
 
@@ -21,11 +21,11 @@ class UserPublic(UserBase):
         )
 
 
-class UsersPublic(SQLModel):
-    data: list[UserPublic.from_orm]
-    count: int
-
-
 class UserUpdate(SQLModel):
     email: str | None = Field(default=None, max_length=255)
     password: str | None = Field(default=None, min_length=8, max_length=255)
+
+
+class UserCreate(UserBase):
+    password: str = Field(min_length=8, max_length=255)
+    role: str = Field(default="user")

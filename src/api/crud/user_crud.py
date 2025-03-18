@@ -1,9 +1,9 @@
 import uuid
 from typing import Optional
 from sqlmodel import Session, select
-from src.configs.security import get_hash_password, verify_password
-from src.configs.config import logger
-from src.models.users import User, UserCreate
+from src.core.security import get_hash_password, verify_password
+from src.core.config import logger
+from src.schemas.user import User, UserCreate
 from src.schemas.user import UserPublic, UserUpdate
 
 from src.api.crud import role_crud

@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_PORT: str
 
+    PGADMIN_DEFAULT_EMAIL: str = "admin@gmail.com"
+    PGADMIN_DEFAULT_PASSWORD: str = "admin@123"
+    PGADMIN_PORT: int = 50
+
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 5  # 5 minutes
     REFRESH_TOKEN_EXPIRE_DAYS: int = 60 * 24 * 14  # 14 days
     SECRET_KEY: str = secrets.token_urlsafe(32)

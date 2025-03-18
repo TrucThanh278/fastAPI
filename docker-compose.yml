@@ -12,31 +12,31 @@ services:
     pgadmin:
         image: dpage/pgadmin4
         environment:
-            PGADMIN_DEFAULT_EMAIL: admin@gmail.com
-            PGADMIN_DEFAULT_PASSWORD: Admin@123
+            PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+            PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
         ports:
-            - "5050:80"
+            - "${PGADMIN_PORT}:80"
         depends_on:
             - postgres_db
-    # fastapi:
-    #     build: .
-    #     restart: always
-    #     container_name: fastapi_app
-    #     ports:
-    #         - "8000:8000"
-    #     depends_on:
-    #         - postgres_db
-    #     env_file:
-    #         - .env
-    #     volumes:
-    #         - .:/app
-    #     command:
-    #         [
-    #             "uvicorn",
-    #             "src.main:app",
-    #             "--host",
-    #             "0.0.0.0",
-    #             "--port",
-    #             "8000",
-    #             "--reload",
-    #         ]
+    fastapi:
+        build: .
+        restart: always
+        container_name: fastapi_app
+        ports:
+            - "8000:8000"
+        depends_on:
+            - postgres_db
+        env_file:
+            - .env
+        volumes:
+            - .:/app
+        command:
+            [
+                "uvicorn",
+                "src.main:app",
+                "--host",
+                "0.0.0.0",
+                "--port",
+                "8000",
+                "--reload",
+            ]

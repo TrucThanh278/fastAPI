@@ -11,21 +11,18 @@ from starlette.templating import Jinja2Templates
 
 from src.deps import SessionDep
 from src.api.crud import otp_crud, user_crud, refresh_token_crud
-from src.configs import mail
-from src.configs.config import settings
-from src.configs.security import (
+from src.core import mail
+from src.core.config import settings
+from src.core.security import (
     create_token,
-    create_reset_password_token,
-    decode_reset_password_token,
     pwd_context,
     create_otp,
     get_hash_password,
 )
-from src.configs.config import logger
+from src.core.config import logger
 from src.models.users import User
 from src.schemas.request import RefreshTokenRequest, ForgetPasswordRequest, LoginRequest
 from src.schemas.user import UserPublic, UserUpdate
-from src.schemas.reset_password import SuccessMessage, ResetForgetPassword
 
 
 from src.deps import get_current_user, SessionDep

@@ -5,8 +5,8 @@ from typing import Any
 from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 
-from src.configs.config import settings
-from src.configs.config import logger
+from src.core.config import settings
+from src.core.config import logger
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

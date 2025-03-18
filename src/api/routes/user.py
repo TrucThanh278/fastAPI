@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi_pagination import paginate
 from src.deps import SessionDep, get_current_user
 from src.api.crud import user_crud
-from src.models.users import UserCreate
+from src.schemas.user import UserCreate
 from src.models.users import User
 from src.schemas.user import UserPublic, UserUpdate
 from src.utils.pagination import CustomPage

@@ -1,8 +1,8 @@
 from sqlmodel import Session, select, and_
-from src.models.users import OTP
+from src.models.otp import OTP
 import time
 import time
-from src.configs.config import settings
+from src.core.config import settings
 
 
 def create_otp(email: str, otp: str, session: Session):

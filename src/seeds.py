@@ -1,8 +1,8 @@
 from sqlmodel import Session, select
 from src.api.crud import role_crud, user_crud
-from src.models.users import UserCreate
+from src.schemas.user import UserCreate
 from src.models.roles import Role
-from src.configs.security import get_hash_password
+from src.core.security import get_hash_password
 
 
 def seed_database(session: Session):
